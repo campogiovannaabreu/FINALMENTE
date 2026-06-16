@@ -1,0 +1,119 @@
+package com.giovannaabreu.petshop.controllers;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.giovannaabreu.petshop.entities.Usuarios;
+import com.giovannaabreu.petshop.services.UsuariosService;
+
+@RestController
+@RequestMapping("/usuarios")
+public class UsuariosController {
+
+    @Autowired
+    private UsuariosService service;
+
+    @PostMapping
+    public ResponseEntity<Usuarios> cadastrarUsuario(@RequestBody Usuarios usuario) {
+        Usuarios novoUsuario = service.cadastrar(usuario);
+        return ResponseEntity.status(HttpStatus.CREATED).body(novoUsuario);
+    }
+
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletarUsuario(@PathVariable Long id) {
+
+    boolean removido = service.deletar(id);
+
+    if (!removido) {
+    return ResponseEntity.notFound().build();
+    }
+
+    return ResponseEntity.noContent().build(); // 204
+    //return ResponseEntity.ok(usuarioDeletado);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Usuarios> atualizarUsuario(
+    @PathVariable Long id,
+    @RequestBody Usuarios usuario) {
+
+    Usuarios usuarioAtualizado = service.atualizar(id, usuario);
+
+    if (usuarioAtualizado == null) {
+    return ResponseEntity.notFound().build();
+    }
+
+    return ResponseEntity.ok(usuarioAtualizado);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Usuarios> buscarPorId(@PathVariable Long id) {
+        Usuarios usuario = service.buscarPorId(id);
+        if (usuario == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(usuario);
+    }
+
+    @GetMapping
+    public List<Usuarios> listarUsuarios() {
+    return service.listarTodos();
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Map<String,
+    String> dados) {
+
+            String email = dados.get("email");
+            String senha = dados.get("senha");
+            Usuarios usuario = service.login(email, senha);
+
+            if (usuario == null) {
+                return ResponseEntity.status(401).body("Email ou senha inválidos");
+            }
+
+            return ResponseEntity.ok(usuario);
+    }
+    
+    @PostMapping("/solicitar-recuperacao")
+    public ResponseEntity<Void>solicitarRecuperacao(@RequestParam String email)
+    {
+        boolean enviado = service.enviarEmailRecuperacao(email);
+        
+        if(enviado) {
+            return ResponseEntity.ok().build();
+        }else{
+            return ResponseEntity.notFound().build();
+            }
+        }
+
+
+
+    @PostMapping("/redefinir-senha")
+    public ResponseEntity<String> redefinirSenha(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String novaSenha = payload.get("novaSenha");
+        
+        boolean sucesso = service.redefinirSenha(email, novaSenha);
+        
+        if(sucesso) {
+            return ResponseEntity.ok("Senha redefinida com sucesso!");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuário não encontrado.");
+        }
+     
+    }
+    
+}
